@@ -1,0 +1,4 @@
+J2000: Right ascension and declination format where
+- Right ascension is measured in hhmmss.[decimal]
+- Declination is measured in ddmmss.[decimal]
+Note that SDSS measures these in degrees

@@ -1,0 +1,11 @@
+See "ASAS-3 results" section on below page:
+http://www.astrouw.edu.pl/asas/?page=catalogues
+
+Columns:
+1) "Right ascention + declination": hhmmss+ddmm.m (hours / minutes / seconds + degrees / minutes with 1 decimal)
+2) Oscillation period
+3) Time of max brightness (or min if object is eclipsing)
+4) Max brightness
+5) Variation amplitude
+6) Object type
+7) GCVS name
