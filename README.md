@@ -9,7 +9,7 @@ Folders:
 
 ## Setting up Anaconda Environment
 
-Step 1: Install (Anaconda)[https://www.anaconda.com/download/] for your operating system.  You want the python 3.6 version.
+Step 1: Install [Anaconda](https://www.anaconda.com/download/) for your operating system.  You want the python 3.6 version.
 
 Step 2: Clone this repo.
 
