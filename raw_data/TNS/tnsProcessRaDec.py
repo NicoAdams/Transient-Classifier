@@ -2,14 +2,14 @@ from astropy import units as u
 from astropy.coordinates import Angle
 import csv
 
-fin = open("TNSsample.csv", "r")
-fout = open("TNSsample_deg_converted.csv", "w")
+fin = open("TNScatalog.csv", "r")
+fout = open("TNScatalog_deg_converted.csv", "w")
 
 reader = csv.reader(fin)
 writer = csv.writer(fout)
 
 def createNewRow(row, newRa, newDec):
-	return row[:4] + [newRa, newDec] + row[4:]
+	return row[:2] + [newRa, newDec] + row[4:]
 
 rowCount = 0
 
@@ -20,7 +20,7 @@ for row in reader:
 	
 	if headerRow:
 		headerRow = False
-		writer.writerow(createNewRow(row, "RA (deg)", "DEC (deg)"))
+		writer.writerow(createNewRow(row, "RA", "DEC"))
 		continue
 	
 	ra = row[2]
