@@ -3,9 +3,6 @@ from urllib.error import HTTPError
 from urllib.parse import quote
 import json
 
-# TODO: I don't set a "whichquery" arg, but it takes in ether "imaging" or "spectra" -- what do they do? Could filter out hosts that are not spectroscopically confirmed
-# TODO: The TNS catalog has redshift values, but we should try to get them from SDSS queries as well. Currently this does not happen 
-
 # Example search URL:
 # http://skyserver.sdss.org/dr14/SkyServerWS/SearchTools/RadialSearch?ra=258.2&dec=64&radius=4.1&whichway=equatorial&limit=10&format=html&fp=none&uband=0,17&check_u=u&gband=0,15&check_g=g&whichquery=imaging
 
@@ -15,15 +12,22 @@ sqlSearchUrl = baseUrl + "SqlSearch?"
 
 # --- Helper functions ---
 
+def convertNoneValsTo0(hostDict):
+	return {k: 0 if hostDict[k]==None else hostDict[k] for k in hostDict}
+
 def getSDSSRadialSearchUrl(ra, dec, radius): # Radius should actually be 5 arcsec, this is 1 arcmin
 	# Returns the URL that will search SDSS at the given ra, dec, and radius
 	args = "ra={}&dec={}&radius={}&limit=0".format(ra, dec, radius)
 	return radialSearchUrl+args
 
 def getSDSSNearestHostsCommand(ra, dec, radius, hostNum):
-	cmd = ("SELECT TOP {} p.objid, p.run, p.rerun, p.camcol, p.field, p.obj, p.type, p.ra, p.dec, p.u, p.g, p.r, p.i, p.z, n.distance " 
-	 	    "FROM fGetNearbyObjEq({},{},{}) n, PhotoPrimary p WHERE n.objID=p.objID ORDER BY distance"
-	 	   ).format(hostNum, ra, dec, radius)
+	cmd = ("SELECT TOP {}"
+		   " p.objid, p.type, p.ra, p.dec, p.u, p.g, p.r, p.i, p.z, p.err_u, p.err_g, p.err_r, p.err_i, p.err_z, n.distance, pz.z AS redshift, pz.zErr AS err_redshift"
+	 	   " FROM fGetNearbyObjEq({},{},{}) n"
+	 	   " JOIN PhotoPrimary p ON n.objID=p.objID"
+	 	   " LEFT JOIN Photoz pz ON pz.objID=p.objID"
+	 	   " ORDER BY distance"
+	 	  ).format(hostNum, ra, dec, radius)
 	return cmd
 
 def getSDSSNearestHostsUrl(ra, dec, radius, hostNum):
@@ -35,6 +39,7 @@ def getSDSSNearestHostsUrl(ra, dec, radius, hostNum):
 def processResponse(responseReadout):
 	responseObject = json.loads(responseReadout.decode("utf-8"))
 	hostsList = responseObject[0]['Rows'] # Extracts the dictionary of hosts info
+	hostsList = list(map(convertNoneValsTo0, hostsList))
 	return hostsList
 
 # --- Search functions ---
