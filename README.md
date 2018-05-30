@@ -2,7 +2,11 @@
 Contextual classification of transients
 
 Structure:
-- Put  
+- data: Files related to training data
+    - raw_data: Data that is NOT ready for training
+    - process_data: Code for processing data in raw_data
+    - training: Data files that are ready to be used for training
+- Exploratory: If you don't know where to put something, put it here for now
 
 ## Setting up Anaconda Environment
 
