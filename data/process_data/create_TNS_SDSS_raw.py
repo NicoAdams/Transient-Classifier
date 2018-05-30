@@ -1,18 +1,26 @@
-# Hacky and terrible way of getting SDSS-querying code in here
+# Hacky and terrible. This should eventually be fixed by setting up a python environment more carefully
 import sys
-sys.path.append("./data/")
+sys.path.append('.')
 import querySDSS
 
 import csv
 from threading import Thread
 from time import sleep
 
-requestLimit = -1
-concurrentRequestLimit = 10
-radiusLimit = 0.25 # In arcminutes
+# -- Parameters --
 
-# Will need to change this with any change to the SDSS request
-sdssFields = ['objid','type','distance','ra','dec','u','g','r','i','z','redshift','err_u','err_g','err_r','err_i','err_z','err_redshift']
+tnsCatalogFile = "raw_data/TNS/TNScatalog_processed.csv"
+outputFile = "raw_data/TNS_SDSS_raw NEW.csv"
+
+radiusLimit = 0.1 # In arcminutes
+
+requestLimit = None
+concurrentRequestLimit = 10
+sleepTime = 0.05 # Seconds
+
+# This is the order that these items will be written to file 
+# -- EDIT THIS -- if any changes are made to the results of "querySDSS.searchNearestHost"
+sdssFields = ['objid','type','offset','ra','dec','u','g','r','i','z','redshift','err_u','err_g','err_r','err_i','err_z','err_redshift']
 
 sdssFieldPositions = {sdssFields[i]: i for i in range(len(sdssFields))}
 sdssHeaders = list(map(lambda s: "SDSS "+s, sdssFields))
@@ -24,10 +32,8 @@ def getHostRow(host):
 		hostRow[sdssFieldPositions[key]] = host[key]
 	return hostRow
 
-fin = open("exploratory/TNScatalog_type_filtered.csv")
-fout = open("exploratory/Experimental TNS_SDSS_raw.csv", "w")
-reader = csv.reader(fin)
-writer = csv.writer(fout)
+reader = csv.reader(open(tnsCatalogFile))
+writer = csv.writer(open(outputFile, "w"))
 
 isHeaderRow = True
 requestNum = 0
@@ -36,11 +42,9 @@ responseNum = 0
 def handleRequest(row, ra, dec, currRequestNum):
 	global responseNum
 
-	print("Sending request {}".format(currRequestNum))
-	
 	host = querySDSS.searchNearestHost(ra, dec, radiusLimit)
 	
-	print(currRequestNum, "--" if host==None else host['distance'])
+	print(currRequestNum, "--" if host==None else host['offset'])
 	if host != None:
 		hostRow = getHostRow(host)
 		writer.writerow(row + hostRow)
@@ -63,7 +67,7 @@ for row in reader:
 	if requestNum == requestLimit: break
 	
 	# If requests haven't come in yet, wait
-	while requestNum - responseNum >= concurrentRequestLimit: sleep(0.1)
+	while requestNum - responseNum >= concurrentRequestLimit: sleep(sleepTime)
 	
 
 print("(All requests sent)")

@@ -1,6 +1,6 @@
 # Get header row
 
-fout = open("TNScatalog.csv", "w")
+fout = open("TNScatalog_raw.csv", "w")
 
 f1 = open("searches/tns_search (1).csv").read()
 headers = f1[:f1.index("\n")]
