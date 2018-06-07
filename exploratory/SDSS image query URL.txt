@@ -1,1 +1,0 @@
-http://skyserver.sdss.org/dr14/SkyServerWS/ImgCutout/getjpeg?TaskName=Skyserver.Chart.Navi&ra=179.689293428354&dec=-0.454379056007667&scale=0.79224&width=1536&height=1536&opt=

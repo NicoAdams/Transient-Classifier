@@ -1,7 +1,7 @@
 # Hacky and terrible. This should eventually be fixed by setting up a python environment more carefully
 import sys
 sys.path.append('.')
-import querySDSS
+import querySDSSHosts
 
 import csv
 from threading import Thread
@@ -19,7 +19,7 @@ concurrentRequestLimit = 10
 sleepTime = 0.05 # Seconds
 
 # This is the order that these items will be written to file 
-# -- EDIT THIS -- if any changes are made to the results of "querySDSS.searchNearestHost"
+# -- EDIT THIS -- if any changes are made to the results of "querySDSSHosts.searchNearestHost"
 sdssFields = ['objid','type','offset','ra','dec','u','g','r','i','z','redshift','err_u','err_g','err_r','err_i','err_z','err_redshift']
 
 sdssFieldPositions = {sdssFields[i]: i for i in range(len(sdssFields))}
@@ -42,7 +42,7 @@ responseNum = 0
 def handleRequest(row, ra, dec, currRequestNum):
 	global responseNum
 
-	host = querySDSS.searchNearestHost(ra, dec, radiusLimit)
+	host = querySDSSHosts.searchNearestHost(ra, dec, radiusLimit)
 	
 	print(currRequestNum, "--" if host==None else host['offset'])
 	if host != None:

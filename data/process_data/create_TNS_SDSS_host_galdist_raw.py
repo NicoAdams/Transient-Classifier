@@ -1,7 +1,7 @@
 # Hacky and terrible. This should eventually be fixed by setting up a python environment more carefully
 import sys
 sys.path.append('.')
-import querySDSS
+import querySDSSHosts
 
 import csv
 from threading import Thread
@@ -21,7 +21,7 @@ concurrentRequestLimit = 10
 sleepTime = 0.05 # Seconds
 
 # This is the order that these items will be written to file 
-# -- EDIT THIS -- if any changes are made to the results of "querySDSS.searchNearestHost"
+# -- EDIT THIS -- if any changes are made to the results of "querySDSSHosts.searchNearestHost"
 hostFields = ['objid','type','offset','redshift','ra','dec','u','g','r','i','z']
 galaxyFields = ['objid','type','offset','redshift','ra','dec','u','g','r','i','z']
 
@@ -48,8 +48,8 @@ def handleRowRequests(row, ra, dec, currRequestNum):
 	global responseNum
 	
 	# Makes the "host" and "galaxy" requests one at a time (these are not concurrent requests)
-	host = querySDSS.searchNearestHost(ra, dec, hostRadiusLimit)
-	galaxy = querySDSS.searchNearestGalaxyByDistance(ra, dec, galaxyRadiusLimit)
+	host = querySDSSHosts.searchNearestHost(ra, dec, hostRadiusLimit)
+	galaxy = querySDSSHosts.searchNearestGalaxyByDistance(ra, dec, galaxyRadiusLimit)
 	
 	print(currRequestNum, "-" if host==None else 'H', "-" if galaxy==None else 'G')
 	
