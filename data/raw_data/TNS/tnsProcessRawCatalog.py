@@ -21,7 +21,7 @@ for row in reader:
 		writer.writerow(newHeaders)
 		continue
 	
-	# Filters rows by type
+	# Skips rows without type
 	if not row[tnsTypeIndex]: continue
 	
 	ra = row[2]
@@ -29,6 +29,9 @@ for row in reader:
 	raDeg = round(Angle(ra, unit=u.hour).degree, 5)
 	decDeg = round(Angle(dec, unit=u.deg).degree, 5)
 	row = replaceRaDec(row, raDeg, decDeg)	
+	
+	# Skips rows without RA/DEC 
+	if raDeg==0 and decDeg==0: continue
 	
 	writer.writerow(row)
 	

@@ -59,7 +59,7 @@ def handleRowRequests(row, ra, dec, currRequestNum):
 		host2Values = getFieldValues(hosts[1], hostFieldPositions)
 		appendRow(row + host1Values + host2Values)
 	
-	print(currRequestNum, "--" if len(hosts)<2 else host1Values[2], host2Vales[2])
+	print(currRequestNum, "--" if len(hosts)<2 else "H2")
 	
 	responseNum += 1
 
