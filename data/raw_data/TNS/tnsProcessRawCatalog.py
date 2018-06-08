@@ -2,8 +2,8 @@ from astropy import units as u
 from astropy.coordinates import Angle
 import csv
 
-reader = csv.reader(open("raw_data/TNS/TNScatalog_raw.csv"))
-writer = csv.writer(open("raw_data/TNS/TNScatalog_processed.csv", "w"))
+reader = csv.reader(open("TNScatalog_raw.csv"))
+writer = csv.writer(open("TNScatalog_processed.csv", "w"))
 
 # Index of the TNS type label
 tnsTypeIndex = 4

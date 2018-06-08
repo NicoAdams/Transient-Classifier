@@ -1,33 +1,33 @@
-# Hacky and terrible. This should eventually be fixed by setting up a python environment more carefully
-import sys
-sys.path.append('.')
-import querySDSSHosts
-
 import csv
 from threading import Thread
 from time import sleep
 
+# Local files
+import sys
+sys.path.append('.')
+import querySDSSHosts
+
 # -- Parameters --
 
 tnsCatalogFile = "raw_data/TNS/TNScatalog_processed.csv"
-outputFile = "raw_data/TNS_SDSS_host_galdist_raw NEW.csv"
+outputFile = "raw_data/TNS_SDSS_sg_raw_NEW.csv"
 
 # In arcminutes
-hostRadiusLimit = 0.1
+starRadiusLimit = 2
 galaxyRadiusLimit = 2
 
-requestLimit = 200
+requestLimit = None
 concurrentRequestLimit = 10
 sleepTime = 0.05 # Seconds
 
 # This is the order that these items will be written to file 
-# -- EDIT THIS -- if any changes are made to the results of "querySDSSHosts.searchNearestHost"
-hostFields = ['objid','type','offset','redshift','ra','dec','u','g','r','i','z']
+# -- EDIT THIS -- if any changes are made to the results of "querySDSSHosts.searchNearest[Star/Galaxy]"
+starFields = ['objid','type','offset','redshift','ra','dec','u','g','r','i','z']
 galaxyFields = ['objid','type','offset','redshift','ra','dec','u','g','r','i','z']
 
-hostFieldPositions = {hostFields[i]: i for i in range(len(hostFields))}
+starFieldPositions = {starFields[i]: i for i in range(len(starFields))}
 galaxyFieldPositions = {galaxyFields[i]: i for i in range(len(galaxyFields))}
-hostHeaders = list(map(lambda s: "SDSS_host_"+s, hostFields))
+starHeaders = list(map(lambda s: "SDSS_star_"+s, starFields))
 galaxyHeaders = list(map(lambda s: "SDSS_galaxy_"+s, galaxyFields))
 
 def getFieldValues(objectDict, fieldPositions):
@@ -38,7 +38,16 @@ def getFieldValues(objectDict, fieldPositions):
 	return values
 
 reader = csv.reader(open(tnsCatalogFile))
-writer = csv.writer(open(outputFile, "w"))
+
+# Clears the file
+with open(outputFile, 'w') as f: pass
+
+# Writes a line "atomically" (cannot write at the same time as another thread)
+def appendRow(row):
+	with open(outputFile, 'a') as f:
+		writer = csv.writer(f)
+		writer.writerow(row)
+
 
 isHeaderRow = True
 requestNum = 0
@@ -47,23 +56,23 @@ responseNum = 0
 def handleRowRequests(row, ra, dec, currRequestNum):
 	global responseNum
 	
-	# Makes the "host" and "galaxy" requests one at a time (these are not concurrent requests)
-	host = querySDSSHosts.searchNearestHost(ra, dec, hostRadiusLimit)
-	galaxy = querySDSSHosts.searchNearestGalaxyByDistance(ra, dec, galaxyRadiusLimit)
+	# Makes the "star" and "galaxy" requests one at a time (these are not concurrent requests)
+	star = querySDSSHosts.searchNearestStar(ra, dec, starRadiusLimit)
+	galaxy = querySDSSHosts.searchNearestGalaxy(ra, dec, galaxyRadiusLimit)
 	
-	print(currRequestNum, "-" if host==None else 'H', "-" if galaxy==None else 'G')
+	print(currRequestNum, "-" if star==None else 'S', "-" if galaxy==None else 'G')
 	
-	if host != None or galaxy != None:
-		hostValues = getFieldValues(host, hostFieldPositions)
+	if star != None and galaxy != None:
+		starValues = getFieldValues(star, starFieldPositions)
 		galaxyValues = getFieldValues(galaxy, galaxyFieldPositions)
-		writer.writerow(row + hostValues + galaxyValues)
+		appendRow(row + starValues + galaxyValues)
 	
 	responseNum += 1
 
 for row in reader:
 	if isHeaderRow:
 		isHeaderRow = False
-		writer.writerow(row + hostHeaders + galaxyHeaders)
+		appendRow(row + starHeaders + galaxyHeaders)
 		continue
 	
 	requestNum += 1

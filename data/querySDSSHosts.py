@@ -45,13 +45,13 @@ def getSDSSNearestGalaxiesCommand(ra, dec, radius, hostNum):
  	    " ORDER BY offset"
 		).format(hostNum, ra, dec, radius)
 
-def getSDSSNearestGalaxiesCommand(ra, dec, radius, hostNum):
+def getSDSSNearestStarsCommand(ra, dec, radius, hostNum):
 	return (
 		"SELECT TOP {}"
-	    " g.objid, g.type, g.ra, g.dec, g.u, g.g, g.r, g.i, g.z, g.err_u, g.err_g, g.err_r, g.err_i, g.err_z, n.distance AS offset, pz.z AS redshift, pz.zErr AS err_redshift"
+	    " s.objid, s.type, s.ra, s.dec, s.u, s.g, s.r, s.i, s.z, s.err_u, s.err_g, s.err_r, s.err_i, s.err_z, n.distance AS offset, pz.z AS redshift, pz.zErr AS err_redshift"
  	    " FROM fGetNearbyObjEq({},{},{}) n"
- 	    " JOIN Galaxy g ON n.objID=g.objID"
- 	    " LEFT JOIN Photoz pz ON pz.objID=g.objID"
+ 	    " JOIN Star s ON n.objID=s.objID"
+ 	    " LEFT JOIN Photoz pz ON pz.objID=s.objID"
  	    " ORDER BY offset"
 		).format(hostNum, ra, dec, radius)
 
@@ -91,8 +91,19 @@ def searchNearestGalaxies(ra, dec, radius, hostNum):
 	return searchByUrl(url)
 	
 # Returns a dict of the nearest galaxy by offset angle, or None if there is no galaxy in the given radius
-def searchNearestGalaxyByAngle(ra, dec, radius):
+def searchNearestGalaxy(ra, dec, radius):
 	hostList = searchNearestGalaxies(ra, dec, radius, 1)
 	if len(hostList) == 0: return None
 	return hostList[0]
 
+# Returns a list of hostNum galaxies from SDSS, ordered by distance
+def searchNearestStars(ra, dec, radius, hostNum):
+	command = getSDSSNearestStarsCommand(ra, dec, radius, hostNum)
+	url = getSQLSearchCommandUrl(command)
+	return searchByUrl(url)
+	
+# Returns a dict of the nearest galaxy by offset angle, or None if there is no galaxy in the given radius
+def searchNearestStar(ra, dec, radius):
+	hostList = searchNearestStars(ra, dec, radius, 1)
+	if len(hostList) == 0: return None
+	return hostList[0]
