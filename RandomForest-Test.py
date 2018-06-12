@@ -1,9 +1,3 @@
-
-# coding: utf-8
-
-# In[212]:
-
-
 from sklearn.ensemble import RandomForestClassifier
 import pandas as pd
 import numpy as np
@@ -20,10 +14,6 @@ training_data = training_data_raw.drop(['id', 'ra','dec', 'transient_label','tra
 #Remove data with missing information
 training_data.dropna(inplace=True)
 
-
-# In[206]:
-
-
 #Randomly select data to train on, this will change when I use a seperate data set for testing
 training_data['is_train'] = np.random.uniform(0, 1, len(training_data)) <= .75
 ##############################################################################################
@@ -33,10 +23,6 @@ train, test = training_data[training_data['is_train'] == True], training_data[tr
 print('# obs in training data:', len(train))
 print('# obs in test data:', len(test))
 
-
-# In[207]:
-
-
 #Just train on offset redshift and transient magnitude for now
 features = training_data.columns[1:4]
 
@@ -45,20 +31,12 @@ train[features].describe()
 #train
 #print(train[features].isna().sum())
 
-
-# In[208]:
-
-
-
-#np.set_printoptions(threshold=np.nan)
-
+#Training
 clf = RandomForestClassifier(n_jobs=2, random_state=0)
 clf.fit(train[features], train['is_SN'])
 
-
-# In[209]:
-
-
+##############################################################################################
+#Predictions etc.
 preds = clf.predict(test[features])
 
 #Converting to a boolean array -- there's probably a better way to do this?
