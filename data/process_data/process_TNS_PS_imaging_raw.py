@@ -45,7 +45,7 @@ processUtil.createOrClearFile(outputFile)
 
 # Handles headers
 headers = reader.__next__()
-processUtil.appendRow(transientHeaders + headers[:firstPixelCol], outputFile)
+processUtil.appendRow(transientHeaders + headers[firstPixelCol:], outputFile)
 
 # Generates and writes training rows
 for row in reader: handleRow(row)
