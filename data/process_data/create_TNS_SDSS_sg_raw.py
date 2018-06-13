@@ -1,91 +1,82 @@
 import csv
-from threading import Thread
-from time import sleep
+from multiprocessing.dummy import Pool
+from urllib.error import URLError
 
 # Local files
 import sys
 sys.path.append('.')
 import querySDSSHosts
+import processUtil
+import processTNSUtil
 
 # -- Parameters --
 
 tnsCatalogFile = "raw_data/TNS/TNScatalog_processed.csv"
-outputFile = "raw_data/TNS_SDSS_sg_raw_NEW.csv"
+outputFile = "process_data/created/TNS_SDSS_sg_raw test.csv"
 
 # In arcminutes
 starRadiusLimit = 2
 galaxyRadiusLimit = 2
 
-requestLimit = None
-concurrentRequestLimit = 10
-sleepTime = 0.05 # Seconds
+rowLimit = 10
+threadNum = 12
+requestAttempts = 5
+
+# -- Helper functions --
 
 # This is the order that these items will be written to file 
-# -- EDIT THIS -- if any changes are made to the results of "querySDSSHosts.searchNearest[Star/Galaxy]"
 starFields = ['objid','type','offset','redshift','ra','dec','u','g','r','i','z']
 galaxyFields = ['objid','type','offset','redshift','ra','dec','u','g','r','i','z']
 
 starFieldPositions = {starFields[i]: i for i in range(len(starFields))}
 galaxyFieldPositions = {galaxyFields[i]: i for i in range(len(galaxyFields))}
+
 starHeaders = list(map(lambda s: "SDSS_star_"+s, starFields))
 galaxyHeaders = list(map(lambda s: "SDSS_galaxy_"+s, galaxyFields))
-
-def getFieldValues(objectDict, fieldPositions):
-	values = ["" for i in range(len(fieldPositions))]
-	if objectDict == None: return values
-	for key in fieldPositions.keys():
-		values[fieldPositions[key]] = objectDict[key]
-	return values
+sdssHeaders = starHeaders + galaxyHeaders
 
 reader = csv.reader(open(tnsCatalogFile))
+currRowNum = 0
 
-# Clears the file
-with open(outputFile, 'w') as f: pass
+def getHostRow(star, galaxy):
+	return processUtil.getFieldValues(star, starFieldPositions) + processUtil.getFieldValues(galaxy, galaxyFieldPositions)
 
-# Writes a line "atomically" (cannot write at the same time as another thread)
-def appendRow(row):
-	with open(outputFile, 'a') as f:
-		writer = csv.writer(f)
-		writer.writerow(row)
-
-
-isHeaderRow = True
-requestNum = 0
-responseNum = 0
-
-def handleRowRequests(row, ra, dec, currRequestNum):
-	global responseNum
+def handleRow(row):
+	rowId = row[0]
+	ra, dec = processTNSUtil.getRowRaDec(row)
 	
-	# Makes the "star" and "galaxy" requests one at a time (these are not concurrent requests)
-	star = querySDSSHosts.searchNearestStar(ra, dec, starRadiusLimit)
-	galaxy = querySDSSHosts.searchNearestGalaxy(ra, dec, galaxyRadiusLimit)
+	starRequestFunction = lambda: querySDSSHosts.searchNearestStar(ra, dec, starRadiusLimit)
+	galaxyRequestFunction = lambda: querySDSSHosts.searchNearestGalaxy(ra, dec, galaxyRadiusLimit)
+
+	star = processUtil.requestUntilSuccess(starRequestFunction, limit=requestAttempts, returnOnFailure=None)
+	galaxy = processUtil.requestUntilSuccess(galaxyRequestFunction, limit=requestAttempts, returnOnFailure=None)
 	
-	print(currRequestNum, "-" if star==None else 'S', "-" if galaxy==None else 'G')
+	global currRowNum
+	currRowNum += 1
+	print(currRowNum, rowId, "-" if star==None else 'S', "-" if galaxy==None else 'G')
 	
 	if star != None and galaxy != None:
-		starValues = getFieldValues(star, starFieldPositions)
-		galaxyValues = getFieldValues(galaxy, galaxyFieldPositions)
-		appendRow(row + starValues + galaxyValues)
-	
-	responseNum += 1
+		hostRow = getHostRow(star, galaxy)
+		processUtil.appendRow(row + hostRow, outputFile)
+		return True
+	return False
 
-for row in reader:
-	if isHeaderRow:
-		isHeaderRow = False
-		appendRow(row + starHeaders + galaxyHeaders)
-		continue
-	
-	requestNum += 1
-	
-	ra, dec = row[2:4]
-	t = Thread(target=handleRowRequests, args=(row, ra, dec, requestNum))
-	t.start()
-	
-	# Ends the loop after a given number of rows
-	if requestNum == requestLimit: break
-	
-	# If requests haven't come in yet, wait
-	while requestNum - responseNum >= concurrentRequestLimit: sleep(sleepTime)
-	
-print("(All requests sent)")
+# -- Script --
 
+# User prompt
+processUtil.confirmOverwrite(outputFile)
+
+# Clears the file
+processUtil.createOrClearFile(outputFile)
+
+# Handles the headers
+headerRow = reader.__next__()
+processUtil.appendRow(headerRow + sdssHeaders, outputFile)
+
+# Reads and filters the catalog rows
+rows = [row for row in reader]
+if rowLimit: rows = rows[:rowLimit]
+
+# Requests and writes the desired image data
+pool = Pool(threadNum)
+pool.map(handleRow, rows)

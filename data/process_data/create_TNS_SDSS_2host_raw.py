@@ -1,85 +1,77 @@
 import csv
-from threading import Thread
-from time import sleep
+from multiprocessing.dummy import Pool
+from urllib.error import URLError
 
 # Local files
 import sys
 sys.path.append('.')
 import querySDSSHosts
+import processUtil
 
 # -- Parameters --
 
 tnsCatalogFile = "raw_data/TNS/TNScatalog_processed.csv"
-outputFile = "raw_data/TNS_SDSS_2host_raw.csv"
+outputFile = "process_data/created/TNS_SDSS_2host_raw test.csv"
 
 # In arcminutes
-hostRadiusLimit = 2
+radiusLimit = 2
 
-requestLimit = None
-concurrentRequestLimit = 10
-sleepTime = 0.05 # Seconds
+rowLimit = 10
+threadNum = 12
+requestAttempts = 5
 
-# The names of the fields from "querySDSSHosts.searchNearestHosts"
+# -- Helper functions --
+
 # This is the order that these items will be written to file 
 hostFields = ['objid','type','offset','redshift','ra','dec','u','g','r','i','z']
 
 hostFieldPositions = {hostFields[i]: i for i in range(len(hostFields))}
 host1Headers = list(map(lambda s: "SDSS_host1_"+s, hostFields))
 host2Headers = list(map(lambda s: "SDSS_host2_"+s, hostFields))
-
-def getFieldValues(objectDict, fieldPositions):
-	values = ["" for i in range(len(fieldPositions))]
-	if objectDict == None: return values
-	for key in fieldPositions.keys():
-		values[fieldPositions[key]] = objectDict[key]
-	return values
+sdssHeaders = host1Headers + host2Headers
 
 reader = csv.reader(open(tnsCatalogFile))
+currRowNum = 0
+
+def getRowRaDec(row):
+	return float(row[2]), float(row[3])
+
+def getHostRow(host1, host2):
+	return processUtil.getFieldValues(host1, hostFieldPositions) + processUtil.getFieldValues(host2, hostFieldPositions)
+
+def handleRow(row):
+	rowId = row[0]
+	ra, dec = getRowRaDec(row)
+	
+	requestFunction = lambda: querySDSSHosts.searchNearestHosts(ra, dec, radiusLimit, 2)
+	hosts = processUtil.requestUntilSuccess(requestFunction, limit=requestAttempts, returnOnFailure=[])
+	
+	global currRowNum
+	currRowNum += 1
+	print(currRowNum, rowId, "--" if len(hosts)<2 else (round(hosts[0]['offset']*60,1), round(hosts[1]['offset']*60,1)))
+	
+	if len(hosts) == 2:
+		hostRow = getHostRow(hosts[0], hosts[1])
+		processUtil.appendRow(row + hostRow, outputFile)
+		return True
+	return False
+
+# -- Script --
+
+# User prompt
+processUtil.confirmOverwrite(outputFile)
 
 # Clears the file
-with open(outputFile, 'w') as f: pass
+processUtil.createOrClearFile(outputFile)
 
-# Writes a line "atomically" (cannot write at the same time as another thread)
-def appendRow(row):
-	with open(outputFile, 'a') as f:
-		writer = csv.writer(f)
-		writer.writerow(row)
+# Handles the headers
+headerRow = reader.__next__()
+processUtil.appendRow(headerRow + sdssHeaders, outputFile)
 
-isHeaderRow = True
-requestNum = 0
-responseNum = 0
+# Reads and filters the catalog rows
+rows = [row for row in reader]
+if rowLimit: rows = rows[:rowLimit]
 
-def handleRowRequests(row, ra, dec, currRequestNum):
-	global responseNum
-	
-	hosts = querySDSSHosts.searchNearestHosts(ra, dec, hostRadiusLimit, 2)
-		
-	if len(hosts) == 2:
-		host1Values = getFieldValues(hosts[0], hostFieldPositions)
-		host2Values = getFieldValues(hosts[1], hostFieldPositions)
-		appendRow(row + host1Values + host2Values)
-	
-	print(currRequestNum, "--" if len(hosts)<2 else "H2")
-	
-	responseNum += 1
-
-for row in reader:
-	if isHeaderRow:
-		isHeaderRow = False
-		appendRow(row + host1Headers + host2Headers)
-		continue
-	
-	requestNum += 1
-	
-	ra, dec = row[2:4]
-	t = Thread(target=handleRowRequests, args=(row, ra, dec, requestNum))
-	t.start()
-	
-	# Ends the loop after a given number of rows
-	if requestNum == requestLimit: break
-	
-	# If requests haven't come in yet, wait
-	while requestNum - responseNum >= concurrentRequestLimit: sleep(sleepTime)
-	
-print("(All requests sent)")
-
+# Requests and writes the desired image data
+pool = Pool(threadNum)
+pool.map(handleRow, rows)

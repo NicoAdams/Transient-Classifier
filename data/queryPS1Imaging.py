@@ -8,16 +8,16 @@ from bs4 import BeautifulSoup
 
 def arcsec2pix(arcsec): return arcsec*4
 
-def getPS1ImageHTMLUrl(ra, dec, arcsec, outputPixels):
+def getPS1ImageHTMLUrl(ra, dec, arcsec, outputSize):
 	pixels = arcsec2pix(arcsec)
 	url = (
 		"http://ps1images.stsci.edu/cgi-bin/ps1cutouts?pos={}%2C{}&filter=g&filter=r&filter=i&filter=z"
 		"&filetypes=stack&auxiliary=data&size={}&output_size={}&verbose=0&autoscale=99.500000&catlist="
-		).format(ra, dec, pixels, outputPixels)
+		).format(ra, dec, pixels, outputSize)
 	return url
 
-def queryPS1ImageHTML(ra, dec, arcsec, outputPixels):
-	url = getPS1ImageHTMLUrl(ra, dec, arcsec, outputPixels)
+def queryPS1ImageHTML(ra, dec, arcsec, outputSize):
+	url = getPS1ImageHTMLUrl(ra, dec, arcsec, outputSize)
 	response = urlopen(url)
 	html = response.read()
 	return html
@@ -29,8 +29,8 @@ def getPS1ImageSourcesFromHTML(html):
 	srcs = ['http:'+i['src'] for i in imgs]
 	return srcs
 	
-def queryPS1Images(ra, dec, arcsec, outputPixels):
-	html = queryPS1ImageHTML(ra, dec, arcsec, outputPixels)
+def queryPS1Images(ra, dec, arcsec, outputSize):
+	html = queryPS1ImageHTML(ra, dec, arcsec, outputSize)
 	srcs = getPS1ImageSourcesFromHTML(html)
 	images = []
 	for src in srcs:
@@ -38,8 +38,8 @@ def queryPS1Images(ra, dec, arcsec, outputPixels):
 		images.append(Image.open(response))
 	return images
 
-def queryPS1ImageData(ra, dec, arcsec, outputPixels):
-	images = queryPS1Images(ra, dec, arcsec, outputPixels)
+def queryPS1ImageData(ra, dec, arcsec, outputSize):
+	images = queryPS1Images(ra, dec, arcsec, outputSize)
 	pixelData = []
 	for i in images: pixelData.extend(i.getdata())
 	return pixelData

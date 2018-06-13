@@ -1,12 +1,14 @@
 import csv
-
-# -- Files --
-
-inFile = "raw_data/TNS_SDSS_120arcsec_raw.csv"
-outFile = "training/TNS_SDSS_120arcsec_training.csv"
-transientLabelMapFile = "process_data/TNS_type_label_map.csv"
+import sys
+sys.path.append('.')
+import processUtil
+import processTNSUtil
 
 # -- Parameters --
+
+inputFile = "process_data/created/TNS_SDSS_120arcsec_raw.csv"
+outputFile = "training/TNS_SDSS_120arcsec_training TEST.csv"
+transientLabelMapFile = "process_data/TNS_type_label_map.csv"
 
 # Copy these from the catalog
 catalogColumns = [
@@ -34,83 +36,42 @@ class TrainingExample:
 	i = "i"
 	z = "z"	
 	
-	def generateRow(self):
-		return [
-		self.exampleId,
-		self.ra,
-		self.dec,
-		self.transientLabel,
-		self.hostLabel,
-		self.offset,
-		self.redshift,
-		self.transientMag,
-		self.transientFilter,
-		self.u,
-		self.g,
-		self.r,
-		self.i,
-		self.z
+	def generateRow(self): return [
+		self.exampleId, self.ra, self.dec, self.transientLabel, self.hostLabel, self.offset, self.redshift, 
+		self.transientMag, self.transientFilter, self.u, self.g, self.r, self.i, self.z
 		]
 	
-# -- Code --
+# -- Helper functions --
 
 trainingHeaders = TrainingExample().generateRow()
-	
-tnsReader = csv.reader(open(inFile))
-tnsWriter = csv.writer(open(outFile, "w"))
-
-# Magnitude filter
-
-def filterTransientMag(transientMag):
-	try:
-		transientMag = float(transientMag)
-		if transientMag > 1: return transientMag
-	except ValueError: pass
-	return ""
-
-# TNS transient-type mapping
-
-transientLabelMapReader = csv.reader(open(transientLabelMapFile))
-transientLabelMap = {row[0]: row[1] for row in transientLabelMapReader}
-transientOtherType = "OTHER TRANSIENT"
-def getTransientLabel(tnsType): return transientLabelMap[tnsType] if tnsType in transientLabelMap else transientOtherType
-
-# SDSS host-type mapping
+dictReader = csv.DictReader(open(inputFile))
 
 hostLabelMap = {}
 hostLabelMap['3'] = "GALAXY"
 hostLabelMap['6'] = "STAR"
 hostOtherType = "OTHER"
+
+transientLabelMap = processTNSUtil.generateTransientLabelMap(transientLabelMapFile)
+transientOtherType = "OTHER TRANSIENT"
+
+def getTransientLabel(tnsType):
+	return transientLabelMap[tnsType] if tnsType in transientLabelMap else transientOtherType
+
 def getHostLabel(sdssType):
-	return hostLabelMap[sdssType] if sdssType in hostLabelMap else hostOtherType	
+	return hostLabelMap[sdssType] if sdssType in hostLabelMap else hostOtherType
 
-# (For printing at the end)
-
-labelCounts = {label: 0 for label in set(list(transientLabelMap.values()) + [transientOtherType])}
-typesLabeledOther = set()
-
-# The read-process-write loop
-
-headerRow = True
-for row in tnsReader:
-	if headerRow:
-		headerRow = False
-		tnsWriter.writerow(trainingHeaders)
-		continue
-	
-	rowMap = {catalogColumns[i]: row[i] for i in range(len(row))}
-	
+def handleRowMap(rowMap):
 	trainingExample = TrainingExample()
 	
-	# Get the transient properties
+	# Transient properties
 	trainingExample.exampleId = rowMap["ID"]
 	trainingExample.ra = rowMap["RA"]
 	trainingExample.dec = rowMap["DEC"]
 	trainingExample.transientLabel = getTransientLabel(rowMap["Type"])
-	trainingExample.transientMag = filterTransientMag(rowMap["Discovery Mag"])
+	trainingExample.transientMag = processTNSUtil.filterTransientMag(rowMap["Discovery Mag"])
 	trainingExample.transientFilter = rowMap["Discovery Mag Filter"]
 	
-	# Get host properties
+	# Host properties
 	trainingExample.hostLabel = getHostLabel(rowMap["SDSS type"])
 	trainingExample.offset = rowMap["SDSS offset"]
 	trainingExample.redshift = rowMap["SDSS redshift"]
@@ -127,14 +88,20 @@ for row in tnsReader:
 	
 	# Generate and write the training file row
 	trainingRow = trainingExample.generateRow()
-	tnsWriter.writerow(trainingRow)
+	processUtil.appendRow(trainingRow, outputFile)
+	return trainingRow
 
-# Prints a short label report
+# -- Script --
 
-labelCountPairs = sorted(labelCounts.items(), key=lambda c: c[1], reverse=True)
-labelTotal = sum(labelCounts.values())
+# User prompt
+processUtil.confirmOverwrite(outputFile)
 
-print("Total transients:", labelTotal)
-for pair in labelCountPairs:
-	print(pair[0], "{0:.1%}".format(pair[1]/float(labelTotal)))
-print("Other types:", list(typesLabeledOther))
+# Clears output file
+processUtil.createOrClearFile(outputFile)
+
+# Handles headers
+dictReader.__next__()
+processUtil.appendRow(trainingHeaders, outputFile)
+
+# Generates and writes training rows
+trainingRows = [handleRowMap(rowMap) for rowMap in dictReader]
