@@ -1,0 +1,99 @@
+CX Weight: 1
+Classifier trained. Time taken: 0.8774785995483398
+        P=1     P=0
+A=1     1168    0
+A=0     40      3
+
+F1 (+, all SN): 98.19%
+F1 (+):         98.32%
+F1 (-):         13.04%
+
+CX Weight: 4
+Classifier trained. Time taken: 0.6292893886566162
+        P=1     P=0
+A=1     1161    7
+A=0     28      15
+
+F1 (+, all SN): 98.19%
+F1 (+):         98.52%
+F1 (-):         46.15%
+
+CX Weight: 9
+Classifier trained. Time taken: 0.9122989177703857
+        P=1     P=0
+A=1     1139    29
+A=0     20      23
+
+F1 (+, all SN): 98.19%
+F1 (+):         97.89%
+F1 (-):         48.42%
+
+CX Weight: 16
+Classifier trained. Time taken: 1.1754331588745117
+        P=1     P=0
+A=1     1112    56
+A=0     17      26
+
+F1 (+, all SN): 98.19%
+F1 (+):         96.82%
+F1 (-):         41.6%
+
+CX Weight: 25
+Classifier trained. Time taken: 1.3807170391082764
+        P=1     P=0
+A=1     1086    82
+A=0     16      27
+
+F1 (+, all SN): 98.19%
+F1 (+):         95.68%
+F1 (-):         35.53%
+
+CX Weight: 36
+Classifier trained. Time taken: 1.5812697410583496
+        P=1     P=0
+A=1     1059    109
+A=0     14      29
+
+F1 (+, all SN): 98.19%
+F1 (+):         94.51%
+F1 (-):         32.04%
+
+CX Weight: 49
+Classifier trained. Time taken: 1.7558162212371826
+        P=1     P=0
+A=1     988     180
+A=0     14      29
+
+F1 (+, all SN): 98.19%
+F1 (+):         91.06%
+F1 (-):         23.02%
+
+CX Weight: 64
+Classifier trained. Time taken: 1.8699862957000732
+        P=1     P=0
+A=1     891     277
+A=0     11      32
+
+F1 (+, all SN): 98.19%
+F1 (+):         86.09%
+F1 (-):         18.18%
+
+CX Weight: 81
+Classifier trained. Time taken: 1.9565520286560059
+        P=1     P=0
+A=1     836     332
+A=0     11      32
+
+F1 (+, all SN): 98.19%
+F1 (+):         82.98%
+F1 (-):         15.72%
+
+CX Weight: 100
+Classifier trained. Time taken: 2.012889862060547
+        P=1     P=0
+A=1     730     438
+A=0     9       34
+
+F1 (+, all SN): 98.19%
+F1 (+):         76.56%
+F1 (-):         13.2%

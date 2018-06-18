@@ -2,13 +2,12 @@ import csv
 import sys
 sys.path.append('.')
 import processUtil
-import processTNSUtil
 
 # -- Parameters --
 
-inputFile = "process_data/created/TNS_SDSS_120arcsec_raw.csv"
-outputFile = "training/TNS_SDSS_120arcsec_training TEST.csv"
-transientLabelMapFile = "process_data/TNS_type_label_map.csv"
+inputFile = "process_data/created/TNS_SDSS_6arcsec_raw.csv"
+outputFile = "training/TNS_SDSS_6arcsec_training.csv"
+transientLabelMapFile = "raw_data/TNS/TNS_type_label_map.csv"
 
 # Copy these from the catalog
 catalogColumns = [
@@ -29,7 +28,6 @@ class TrainingExample:
 	offset = "offset"
 	redshift = "redshift"
 	transientMag = "transient_mag"
-	transientFilter = "transient_filter"
 	u = "u"
 	g = "g"
 	r = "r"
@@ -38,7 +36,7 @@ class TrainingExample:
 	
 	def generateRow(self): return [
 		self.exampleId, self.ra, self.dec, self.transientLabel, self.hostLabel, self.offset, self.redshift, 
-		self.transientMag, self.transientFilter, self.u, self.g, self.r, self.i, self.z
+		self.transientMag, self.u, self.g, self.r, self.i, self.z
 		]
 	
 # -- Helper functions --
@@ -47,12 +45,12 @@ trainingHeaders = TrainingExample().generateRow()
 dictReader = csv.DictReader(open(inputFile))
 
 hostLabelMap = {}
-hostLabelMap['3'] = "GALAXY"
-hostLabelMap['6'] = "STAR"
-hostOtherType = "OTHER"
+hostLabelMap['3'] = 1
+hostLabelMap['6'] = 0
+hostOtherType = 0
 
-transientLabelMap = processTNSUtil.generateTransientLabelMap(transientLabelMapFile)
-transientOtherType = "OTHER TRANSIENT"
+transientLabelMap = processUtil.generateLabelMap(transientLabelMapFile)
+transientOtherType = "OTHER"
 
 def getTransientLabel(tnsType):
 	return transientLabelMap[tnsType] if tnsType in transientLabelMap else transientOtherType
@@ -68,7 +66,7 @@ def handleRowMap(rowMap):
 	trainingExample.ra = rowMap["RA"]
 	trainingExample.dec = rowMap["DEC"]
 	trainingExample.transientLabel = getTransientLabel(rowMap["Type"])
-	trainingExample.transientMag = processTNSUtil.filterTransientMag(rowMap["Discovery Mag"])
+	trainingExample.transientMag = processUtil.filterTNSTransientMag(rowMap["Discovery Mag"])
 	trainingExample.transientFilter = rowMap["Discovery Mag Filter"]
 	
 	# Host properties
@@ -81,14 +79,8 @@ def handleRowMap(rowMap):
 	trainingExample.i = rowMap["SDSS i"]
 	trainingExample.z = rowMap["SDSS z"]
 	
-	# Add the label to the label counts
-	tl = trainingExample.transientLabel
-	labelCounts[tl] += 1
-	if tl==transientOtherType: typesLabeledOther.add(rowMap["Type"])
-	
 	# Generate and write the training file row
 	trainingRow = trainingExample.generateRow()
-	processUtil.appendRow(trainingRow, outputFile)
 	return trainingRow
 
 # -- Script --
@@ -100,8 +92,8 @@ processUtil.confirmOverwrite(outputFile)
 processUtil.createOrClearFile(outputFile)
 
 # Handles headers
-dictReader.__next__()
 processUtil.appendRow(trainingHeaders, outputFile)
 
 # Generates and writes training rows
 trainingRows = [handleRowMap(rowMap) for rowMap in dictReader]
+processUtil.appendRows(trainingRows, outputFile)

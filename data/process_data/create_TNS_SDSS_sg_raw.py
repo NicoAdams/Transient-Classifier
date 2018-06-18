@@ -7,7 +7,6 @@ import sys
 sys.path.append('.')
 import querySDSSHosts
 import processUtil
-import processTNSUtil
 
 # -- Parameters --
 
@@ -43,7 +42,7 @@ def getHostRow(star, galaxy):
 
 def handleRow(row):
 	rowId = row[0]
-	ra, dec = processTNSUtil.getRowRaDec(row)
+	ra, dec = processUtil.getTNSRowRaDec(row)
 	
 	starRequestFunction = lambda: querySDSSHosts.searchNearestStar(ra, dec, starRadiusLimit)
 	galaxyRequestFunction = lambda: querySDSSHosts.searchNearestGalaxy(ra, dec, galaxyRadiusLimit)

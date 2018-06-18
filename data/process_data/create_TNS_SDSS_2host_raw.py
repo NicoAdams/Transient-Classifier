@@ -10,13 +10,15 @@ import processUtil
 
 # -- Parameters --
 
-tnsCatalogFile = "raw_data/TNS/TNScatalog_processed.csv"
-outputFile = "process_data/created/TNS_SDSS_2host_raw test.csv"
+tnsCatalogFile = "process_data/combined_catalogs/TNS_OldPS_Catalog.csv"
+outputFile = "process_data/created/TNS_OldPS_SDSS_2host_raw.csv"
+
+raCol, decCol = 2, 3
 
 # In arcminutes
 radiusLimit = 2
 
-rowLimit = 10
+rowLimit = None
 threadNum = 12
 requestAttempts = 5
 
@@ -33,15 +35,12 @@ sdssHeaders = host1Headers + host2Headers
 reader = csv.reader(open(tnsCatalogFile))
 currRowNum = 0
 
-def getRowRaDec(row):
-	return float(row[2]), float(row[3])
-
 def getHostRow(host1, host2):
 	return processUtil.getFieldValues(host1, hostFieldPositions) + processUtil.getFieldValues(host2, hostFieldPositions)
 
 def handleRow(row):
 	rowId = row[0]
-	ra, dec = getRowRaDec(row)
+	ra, dec = processUtil.getTNSRowRaDec(row)
 	
 	requestFunction = lambda: querySDSSHosts.searchNearestHosts(ra, dec, radiusLimit, 2)
 	hosts = processUtil.requestUntilSuccess(requestFunction, limit=requestAttempts, returnOnFailure=[])

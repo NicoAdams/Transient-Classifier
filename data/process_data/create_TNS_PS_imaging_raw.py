@@ -10,11 +10,13 @@ import processUtil
 
 # -- Parameters --
 
-tnsCatalogFile = "raw_data/TNS/TNScatalog_processed.csv"
-outputFile = "process_data/created/TNS_PS_imaging_20px_raw test.csv"
+tnsCatalogFile = "process_data/combined_catalogs/TNS_OldPS_Catalog.csv"
+outputFile = "process_data/created/TNS_OldPS_PS_imaging_10px_raw TEST.csv"
+
+raCol, decCol = 2, 3
 
 imageArcsec = 10
-imageOutputSize = 20
+imageOutputSize = 10
 
 rowLimit = None
 threadNum = 12
@@ -36,23 +38,25 @@ reader = csv.reader(open(tnsCatalogFile))
 currRowNum = 0
 
 def shouldSkipRow(row):
-	ra, dec = getRowRaDec(row)
+	ra, dec = processUtil.getTNSRowRaDec(row)
 	return dec < -30
 
 def handleRow(row):
 	rowId = row[0]
-	ra, dec = processTNSUtil.getRowRaDec(row)
+	ra, dec = processUtil.getTNSRowRaDec(row)
 	
 	requestFunction = lambda: queryPS1Imaging.queryPS1ImageData(ra, dec, imageArcsec, imageOutputSize)
 	imageData = processUtil.requestUntilSuccess(requestFunction, limit=requestAttempts, returnOnFailure=[])
 		
 	global currRowNum
 	currRowNum += 1
-	print(currRowNum, rowId, len(imageData) if len(imageData) == imageOutputData else "No image")
 	
 	if len(imageData) == imageOutputData:
-		processUtil.appendRow(row + imageData)
+		print(currRowNum, rowId, len(imageData))
+		processUtil.appendRow(row + imageData, outputFile)
 		return True
+	
+	print(currRowNum, rowId, "No image")
 	return False
 
 # -- Script --
