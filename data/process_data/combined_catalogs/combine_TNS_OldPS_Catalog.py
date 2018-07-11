@@ -15,7 +15,7 @@ outputFile = 'process_data/combined_catalogs/TNS_OldPS_Catalog.csv'
 
 # -- Helper functions --
 
-headers = ['id', 'label', 'ra', 'dec', 'mag']
+headers = ['id', 'label', 'ra', 'dec', 'mag', 'survey']
 
 tnsReader = csv.DictReader(open(tnsCatalogFile))
 oldPSReader = csv.DictReader(open(oldPSCatalogFile))
@@ -28,18 +28,20 @@ def getLabel(transType, labelMap):
 	return labelMap[transType] if transType in tnsLabelMap else otherType
 
 def processTNSRow(tnsRow):
+	survey = 'TNS'
 	transId = processUtil.generateUUID()
 	label = getLabel(tnsRow['Type'], tnsLabelMap)
 	ra, dec = tnsRow['RA'], tnsRow['DEC']
 	mag = tnsRow['Discovery Mag']
-	return [transId, label, ra, dec, mag]
+	return [transId, label, ra, dec, mag, survey]
 
 def processOldPSRow(psRow):
+	survey = 'OldPS'
 	transId = processUtil.generateUUID()
 	label = getLabel(psRow['class'], oldPSLabelMap)
 	ra, dec = psRow['ra'], psRow['dec']
 	mag = psRow['first_detect_mag']
-	return [transId, label, ra, dec, mag]
+	return [transId, label, ra, dec, mag, survey]
 
 # -- Script --
 
