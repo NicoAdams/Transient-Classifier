@@ -32,7 +32,6 @@ def getCompletenessPurityCurve(predictProbaOutput, actual):
 	Inputs:
 	- predictProbaOutput: Classifier output from the `predict_proba` function
 	- actual: The actual labels for the classified examples
-	
 	Returns:
 	- Completeness list
 	- Purity list
@@ -79,7 +78,14 @@ def getCompletenessPurityCurve(predictProbaOutput, actual):
 	return completeness, purity, threshold
 
 def getCPTForPurity(predictProbaOutput, actual, purity):
-	# Returns (completeness, purity, threshold) for the minimum threshold yielding the purity specified
+	"""
+	Inputs:
+	- predictProbaOutput: Classifier output from the `predict_proba` function
+	- actual: The actual labels for the classified examples
+	- purity: The purity desired
+	Returns: (completeness, purity, threshold) for the minimum threshold yielding the purity specified
+	(Note that this purity might be higher than the one you specified)
+	"""
 	cList, pList, tList = getCompletenessPurityCurve(predictProbaOutput, actual)
 	for i in range(len(cList)):
 		if pList[i] >= purity: return cList[i], pList[i], tList[i]
