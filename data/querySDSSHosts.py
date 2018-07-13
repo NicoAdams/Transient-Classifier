@@ -5,16 +5,24 @@ import json
 # Example search URL:
 # http://skyserver.sdss.org/dr14/SkyServerWS/SearchTools/RadialSearch?ra=258.2&dec=64&radius=4.1&whichway=equatorial&limit=10&format=html&fp=none&uband=0,17&check_u=u&gband=0,15&check_g=g&whichquery=imaging
 
-baseUrl = "http://skyserver.sdss.org/dr14/SkyServerWS/SearchTools/"
-radialSearchUrl = baseUrl + "RadialSearch?"
-sqlSearchUrl = baseUrl + "SqlSearch?"
+defaultDR = 14
+baseUrlTemplate = "http://skyserver.sdss.org/dr{}/SkyServerWS/SearchTools/"
+
+global baseUrl, radialSearchUrl, sqlSearchUrl
+def setDR(dr):
+	global baseUrl, radialSearchUrl, sqlSearchUrl
+	baseUrl = baseUrlTemplate.format(dr)
+	radialSearchUrl = baseUrl + "RadialSearch?"
+	sqlSearchUrl = baseUrl + "SqlSearch?"
+
+setDR(defaultDR)
 
 # --- Helper functions ---
 
 def convertNoneValsTo0(hostDict):
 	return {k: 0 if hostDict[k]==None else hostDict[k] for k in hostDict}
 
-def getRadialSearchUrl(ra, dec, radius): # Radius should actually be 5 arcsec, this is 1 arcmin
+def getRadialSearchUrl(ra, dec, radius):
 	# Returns the URL that will search SDSS at the given ra, dec, and radius
 	args = "ra={}&dec={}&radius={}&limit=0".format(ra, dec, radius)
 	return radialSearchUrl+args
@@ -96,13 +104,13 @@ def searchNearestGalaxy(ra, dec, radius):
 	if len(hostList) == 0: return None
 	return hostList[0]
 
-# Returns a list of hostNum galaxies from SDSS, ordered by distance
+# Returns a list of hostNum stars from SDSS, ordered by distance
 def searchNearestStars(ra, dec, radius, hostNum):
 	command = getSDSSNearestStarsCommand(ra, dec, radius, hostNum)
 	url = getSQLSearchCommandUrl(command)
 	return searchByUrl(url)
 	
-# Returns a dict of the nearest galaxy by offset angle, or None if there is no galaxy in the given radius
+# Returns a dict of the nearest star by offset angle, or None if there is no star in the given radius
 def searchNearestStar(ra, dec, radius):
 	hostList = searchNearestStars(ra, dec, radius, 1)
 	if len(hostList) == 0: return None
