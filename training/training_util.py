@@ -1,5 +1,3 @@
-import numpy as np
-
 def assertSameLength(list1, list2):
 	l1, l2 = len(list1), len(list2)
 	assert l1 == l2, "Lists must be same length, but have lengths {} and {}".format(l1, l2)
@@ -29,13 +27,11 @@ def _updateClassTable(classTable, actualForCurrThresh):
 	classTable[0][0] += actualForCurrThresh[0]
 	classTable[0][1] += actualForCurrThresh[1]
 
-def getCompletenessPurityCurve(predictProbaOutput, actual, step=True):
+def getCompletenessPurityCurve(predictProbaOutput, actual):
 	"""
 	Inputs:
 	- predictProbaOutput: Classifier output from the `predict_proba` function
 	- actual: The actual labels for the classified examples
-	- step: If you plan to plot these results, "step=True" will make the plot step upward at right angles
-	
 	Returns:
 	- Completeness list
 	- Purity list
@@ -60,7 +56,6 @@ def getCompletenessPurityCurve(predictProbaOutput, actual, step=True):
 	
 	# Loops over every possible thresh
 	actualForCurrThresh = [0, 0]
-	lastPurity = 0
 	for i in range(len(probsSorted)):
 		p, a = probsSorted[i], actualSorted[i]
 		
@@ -70,10 +65,7 @@ def getCompletenessPurityCurve(predictProbaOutput, actual, step=True):
 			
 			currCompleteness, currPurity = getCompletenessAndPurity(classTable)
 			currThresh = p
-			if currPurity >= lastPurity:
-				if step: cpt.append((currCompleteness, lastPurity, currThresh))
-				cpt.append((currCompleteness, currPurity, currThresh))
-				lastPurity = currPurity
+			cpt.append((currCompleteness, currPurity, currThresh))
 			
 		actualForCurrThresh[a] += 1
 	
@@ -82,8 +74,8 @@ def getCompletenessPurityCurve(predictProbaOutput, actual, step=True):
 	currCompleteness, currPurity = getCompletenessAndPurity(makeClassTable([0]*len(actualSorted), actualSorted))
 	cpt.append((currCompleteness, currPurity, currThresh))
 	
-	completenessCurve, purityCurve, threshCurve = zip(*cpt)
-	return completenessCurve, purityCurve, threshCurve
+	completeness, purity, threshold = zip(*cpt)
+	return completeness, purity, threshold
 
 def getCPTForPurity(predictProbaOutput, actual, purity):
 	"""
@@ -91,47 +83,9 @@ def getCPTForPurity(predictProbaOutput, actual, purity):
 	- predictProbaOutput: Classifier output from the `predict_proba` function
 	- actual: The actual labels for the classified examples
 	- purity: The purity desired
-	
 	Returns: (completeness, purity, threshold) for the minimum threshold yielding the purity specified
 	(Note that this purity might be higher than the one you specified)
 	"""
-	cList, pList, tList = getCompletenessPurityCurve(predictProbaOutput, actual, step=False)
+	cList, pList, tList = getCompletenessPurityCurve(predictProbaOutput, actual)
 	for i in range(len(cList)):
 		if pList[i] >= purity: return cList[i], pList[i], tList[i]
-	return -1, -1, -1
-	
-def getPredictionsForThresh(predictProbaOutput, thresh):
-	probs = predictProbaOutput[:,1]
-	mapProbsToPredictions = np.vectorize(lambda p: (1 if p >= thresh else 0)) 
-	return mapProbsToPredictions(probs)
-
-def aggregateCPCurvesByPurity(completenessCurves, purityCurves, purityBinSize=0.01):
-	assertSameLength(completenessCurves, purityCurves)
-	numCurves = len(completenessCurves)
-	
-	def _getPurityIndex(purityCurve, currPurityBin, startIndex=0):
-		for i in range(startIndex, len(purityCurve)):
-			if purityCurve[i] >= currPurityBin: return i
-		return len(purityCurve)-1
-	
-	aggPurity = np.arange(0, 1+purityBinSize, purityBinSize)
-	aggCompleteness = [0] * len(aggPurity)
-	lastCurveIndexList = [0] * numCurves
-	for binIndex in range(len(aggPurity)):
-		purityBin = aggPurity[binIndex]
-		for curveNum in range(numCurves):
-			
-			# Obtains curves
-			currCompletenessCurve, currPurityCurve = \
-				completenessCurves[curveNum], purityCurves[curveNum] 
-			
-			# Gets and stores the new index in the current curve
-			lastCurveIndex = lastCurveIndexList[curveNum]
-			curveIndex = _getPurityIndex(currPurityCurve, purityBin, startIndex=lastCurveIndex)
-			lastCurveIndexList[curveNum] = curveIndex
-			
-			# Gets and stores completeness for the current curve
-			curveCompleteness = currCompletenessCurve[curveIndex]
-			aggCompleteness[binIndex] += curveCompleteness / float(numCurves)
-	
-	return aggCompleteness, aggPurity
